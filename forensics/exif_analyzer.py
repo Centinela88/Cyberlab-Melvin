@@ -132,7 +132,7 @@ def extraer_exif(ruta_imagen: Path) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extrae metadatos EXIF y hashes SHA-1/SHA-256 de una imagen."
+        description="Extrae metadatos EXIF y hashes MD5/SHA-256 de una imagen."
     )
     parser.add_argument("ruta", help="Ruta al archivo de imagen")
     parser.add_argument(
@@ -144,12 +144,20 @@ def main():
     if not ruta_imagen.is_file():
         sys.exit(f"Error: no se encontró el archivo '{ruta_imagen}'")
 
+    try:
+        tamano_bytes = ruta_imagen.stat().st_size
+        hashes = calcular_hashes(ruta_imagen)
+    except PermissionError:
+        sys.exit(f"Error: sin permisos de lectura sobre '{ruta_imagen}'")
+    except OSError as e:
+        sys.exit(f"Error al leer '{ruta_imagen}': {e}")
+
     resultado = {
         "archivo": str(ruta_imagen.resolve()),
-        "tamano_bytes": ruta_imagen.stat().st_size,
+        "tamano_bytes": tamano_bytes,
         "analizado_en": datetime.now().isoformat(timespec="seconds"),
         "exif": extraer_exif(ruta_imagen),
-        "hashes": calcular_hashes(ruta_imagen),
+        "hashes": hashes,
     }
 
     if args.json:
